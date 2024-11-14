@@ -1,122 +1,115 @@
 import Matter from "matter-js";
-const { Bodies, World, Engine, Render, Mouse, Body } = Matter;
+import { clamp } from "./utils";
+import p5 from "p5";
+const { Bodies, World, Engine, Body } = Matter;
 
 const engine = Engine.create();
 const world = engine.world;
-let container: HTMLElement;
-let render: Matter.Render;
-let mouse: Matter.Mouse;
-let mouseConstraint: Matter.MouseConstraint;
 
 const [WIDTH, HEIGHT] = [600, 800];
-const FRUIT_SIZE = 1.1
+const FRUIT_SIZE = 1.25;
+const SPAWN_Y = 50;
 
-const fruits: Fruit[] = [];
+const fruits: Fruits = [];
 let currentFruit: Fruit | null = null;
-const style = {
-  strokeStyle: "#ebdbb2",
-  lineWidth: 1,
-  fillStyle: "transparent"
-};
 
 interface Fruit {
   size: number;
   body: Matter.Body;
+}
+interface Fruits {
+  [key: number]: Fruit;
 }
 
 function instantiate(body: Matter.Body[] | Matter.Body) {
   World.add(world, body instanceof Array ? body : [body]);
 }
 
-function createFruit(x: number, y: number) {
-  const size = (Math.floor(Math.random() * 5) + 1);
-  const body = Bodies.circle(x, y, (size * 6) ** FRUIT_SIZE, {
-    render: style,
+function createFruit(x: number, y: number, s?: number, solid: boolean = true): Fruit {
+  const size = s ?? (Math.floor(Math.random() * 5) + 1);
+  const body = Bodies.circle(x, y, (size * 4) ** FRUIT_SIZE, {
     restitution: 0.5,
+    isSensor: !solid,
   });
 
   const fruit = { size, body };
 
-  fruits.push(fruit);
+  fruits[fruit.body.id] = fruit;
   instantiate(body);
-  console.log(size);
+
   return fruit;
 }
 
-function setup() {
-  container = document.getElementById("container") ?? document.body;
-  render = Render.create({
-    element: container,
-    engine,
-    options: {
-      width: WIDTH,
-      height: HEIGHT,
-      wireframes: false,
-      background: "transparent",
-      pixelRatio: 2
+function removeFruit(id: number) {
+  World.remove(world, fruits[id].body);
+  delete fruits[id];
+}
+
+const sketch = (p: p5) => {
+  p.setup = () => {
+    p.createCanvas(600, 800);
+    p.frameRate(60);
+
+    const walls = [
+      Bodies.rectangle(WIDTH / 2, -25, WIDTH, 50, { isStatic: true }),
+      Bodies.rectangle(WIDTH / 2, HEIGHT + 25, WIDTH, 50, { isStatic: true }),
+      Bodies.rectangle(-25, HEIGHT / 2, 50, HEIGHT, { isStatic: true }),
+      Bodies.rectangle(WIDTH + 25, HEIGHT / 2, 50, HEIGHT, { isStatic: true })
+    ];
+
+    instantiate(walls);
+
+    currentFruit = createFruit(p.mouseX, SPAWN_Y, undefined, false);
+
+    Matter.Events.on(engine, "collisionStart", event => {
+      event.pairs.forEach(event => {
+        const fruitA = fruits[event.bodyA.id];
+        const fruitB = fruits[event.bodyB.id];
+
+        if (!fruitA || !fruitB) return;
+
+        if (fruitA.size == fruitB.size && !event.bodyA.isSensor && !event.bodyB.isSensor) {
+          removeFruit(event.bodyA.id);
+          removeFruit(event.bodyB.id);
+          createFruit(event.contacts[0].vertex.x, event.contacts[0].vertex.y, fruitB.size + 1);
+        }
+      });
+    });
+  };
+
+  p.draw = () => {
+    p.background("#292828");
+    p.fill(0, 0);
+    p.stroke("#ebdbb2")
+
+    Engine.update(engine);
+
+    if (currentFruit) {
+      let x;
+      if (currentFruit.body.circleRadius) {
+        x = clamp(p.mouseX, currentFruit.body.circleRadius, WIDTH - currentFruit.body.circleRadius);
+      } else {
+        x = clamp(p.mouseX, 0, WIDTH);
+      }
+
+      Body.setPosition(currentFruit.body, { x, y: SPAWN_Y });
     }
-  });
 
-  mouse = Mouse.create(render.canvas);
-  mouseConstraint = Matter.MouseConstraint.create(engine, {
-    mouse,
-    constraint: {
-      stiffness: 0,
+    for (let i = 0; i < world.bodies.length; i++) {
+      const element = world.bodies[i];
+      if (element && element.circleRadius) {
+        p.ellipse(element.position.x, element.position.y, ((fruits[element.id].size * 4) ** FRUIT_SIZE) * 2);
+      }
     }
-  });
+  };
 
-  document.addEventListener("click", click);
-
-  World.add(world, mouseConstraint);
-
-  Render.run(render);
-
-  const walls = [
-    Bodies.rectangle(WIDTH / 2, -25, WIDTH, 50),
-    Bodies.rectangle(WIDTH / 2, HEIGHT + 25, WIDTH, 50),
-    Bodies.rectangle(-25, HEIGHT / 2, 50, HEIGHT),
-    Bodies.rectangle(WIDTH + 25, HEIGHT / 2, 50, HEIGHT)
-  ];
-
-  walls.forEach(wall => {
-    wall.isStatic = true;
-    wall.render = {
-      ...style,
-      strokeStyle: "transparent"
-    };
-  });
-
-  instantiate(walls);
-
-  const { x, y } = mouse.absolute;
-  createFruit(x, y);
-  currentFruit = fruits[0];
-}
-
-let lastTime = performance.now();
-function update(time: number = performance.now()) {
-  const deltaTime = time - lastTime;
-  lastTime = time;
-
-  Engine.update(engine, deltaTime);
-
-  requestAnimationFrame(update);
-
-  if (currentFruit) {
-    Body.setPosition(currentFruit.body, mouse.absolute);
-  }
-}
-
-export function main() {
-  setup();
-  update();
-}
-
-function click(ev: MouseEvent) {
-  if (ev.button === 0) {
+  p.mouseClicked = () => {
     if (!currentFruit) return;
+
+    currentFruit.body.isSensor = false;
     currentFruit = null;
-    createFruit(mouse.absolute.x, mouse.absolute.y);
-    currentFruit = fruits[fruits.length - 1];
+    currentFruit = createFruit(p.mouseX, SPAWN_Y, undefined, false);
   }
-}
+};
+
+new p5(sketch);
