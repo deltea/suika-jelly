@@ -1,6 +1,7 @@
 import Matter from "matter-js";
 import { clamp } from "./utils";
 import p5 from "p5";
+import { palettes } from "./palettes";
 const { Bodies, World, Engine, Body } = Matter;
 
 const engine = Engine.create();
@@ -9,6 +10,7 @@ const world = engine.world;
 const [WIDTH, HEIGHT] = [600, 800];
 const FRUIT_SIZE = 1.25;
 const SPAWN_Y = 50;
+const palette = palettes[0];
 
 const fruits: Fruits = [];
 let currentFruit: Fruit | null = null;
@@ -78,9 +80,8 @@ const sketch = (p: p5) => {
   };
 
   p.draw = () => {
-    p.background("#292828");
+    p.background(palette.background);
     p.fill(0, 0);
-    p.stroke("#ebdbb2")
 
     Engine.update(engine);
 
@@ -98,7 +99,9 @@ const sketch = (p: p5) => {
     for (let i = 0; i < world.bodies.length; i++) {
       const element = world.bodies[i];
       if (element && element.circleRadius) {
-        p.ellipse(element.position.x, element.position.y, ((fruits[element.id].size * 4) ** FRUIT_SIZE) * 2);
+        const size = fruits[element.id].size;
+        p.stroke(palette.fruits[size - 1]);
+        p.ellipse(element.position.x, element.position.y, ((size * 4) ** FRUIT_SIZE) * 2);
       }
     }
   };
