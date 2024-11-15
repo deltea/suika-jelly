@@ -10,7 +10,7 @@ const world = engine.world;
 const [WIDTH, HEIGHT] = [600, 800];
 const FRUIT_SIZE = 1.25;
 const SPAWN_Y = 50;
-const palette = palettes[0];
+const palette = palettes[1];
 
 const fruits: Fruits = [];
 let currentFruit: Fruit | null = null;
@@ -47,6 +47,11 @@ function removeFruit(id: number) {
   delete fruits[id];
 }
 
+const conatiner = document.getElementById("container");
+if (conatiner) {
+  conatiner.style.backgroundColor = palette.base;
+}
+
 const sketch = (p: p5) => {
   p.setup = () => {
     p.createCanvas(600, 800);
@@ -77,14 +82,21 @@ const sketch = (p: p5) => {
         }
       });
     });
+
+    p.drawingContext.setLineDash([10, 15]);
   };
 
   p.draw = () => {
     p.background(palette.background);
-    p.fill(0, 0);
 
     Engine.update(engine);
 
+    p.stroke(255);
+    p.stroke(palette.base);
+    p.strokeWeight(5);
+    p.line(0, SPAWN_Y, WIDTH, SPAWN_Y);
+
+    p.stroke(0, 0);
     if (currentFruit) {
       let x;
       if (currentFruit.body.circleRadius) {
@@ -100,7 +112,7 @@ const sketch = (p: p5) => {
       const element = world.bodies[i];
       if (element && element.circleRadius) {
         const size = fruits[element.id].size;
-        p.stroke(palette.fruits[size - 1]);
+        p.fill(palette.fruits[size - 1]);
         p.ellipse(element.position.x, element.position.y, ((size * 4) ** FRUIT_SIZE) * 2);
       }
     }

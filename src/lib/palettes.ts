@@ -1,39 +1,45 @@
 interface Palette {
+  base: string;
   background: string;
   fruits: string[];
 }
 
 export const palettes: Palette[] = [
+  // Fire and Ice
   {
-    background: "#706568",
+    base: "#ffffff",
+    background: "#eeeeee",
     fruits: [
-      "#D9CCA9",
-      "#C1BA94",
-      "#A9A490",
-      "#BABCAA",
-      "#93897C",
-      "#CFD1BC",
-      "#706568",
-      "#A1A3A5",
-      "#EECBA9",
-      "#E4B59A",
-      "#D1988A"
+      "#A73169",
+      "#C24B6E",
+      "#D9626C",
+      "#EC9A6D",
+      "#FFC27A",
+      "#FFEB99",
+      "#94C5AC",
+      "#6AAF9D",
+      "#345D68",
+      "#1C1E34",
+      "#201333",
     ],
   },
+
+  // Catppuccin
   {
-    background: "#060607",
+    base: "#1E1E2E",
+    background: "#181825",
     fruits: [
-      "#1D1E21",
-      "#251415",
-      "#362624",
-      "#452727",
-      "#602322",
-      "#8D2423",
-      "#B9332D",
-      "#FF4537",
-      "#FF8E6C",
-      "#F1A39D",
-      "#FFCBB5"
+      "#f4dbd6",
+      "#f5bde6",
+      "#c6a0f6",
+      "#ed8796",
+      "#f5a97f",
+      "#eed49f",
+      "#a6da95",
+      "#8bd5ca",
+      "#7dc4e4",
+      "#8aadf4",
+      "#cad3f5"
     ]
   }
 ];
